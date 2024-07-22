@@ -1,41 +1,43 @@
 // index.js
-import {
-  openModal,
-  closeModal,
-  handleOverlay,
-  handleEsc,
-} from "./components/modal.js";
+import { openModal, closeModal, handleOverlay } from "./components/modal.js";
 import "./index.css"; // добавьте импорт главного файла стилей
 import { createCard, onLike, deleteCard } from "./components/card.js";
 import { initialCards } from "./components/cards.js";
 
 const imgModal = document.querySelector(".popup_type_image");
 const placesList = document.querySelector(".places__list");
-
+const newPlaceForm = document.querySelector("form[name=new-place]");
+const editProfileForm = document.querySelector("form[name=edit-profile]");
+const nameInput = editProfileForm.querySelector("input[name=name]");
+const descriptionInput = editProfileForm.querySelector(
+  "input[name=description]"
+);
 function initImgModal() {
   const closeImageModal = imgModal.querySelector(".popup__close");
 
   closeImageModal.addEventListener("click", () => closeModal(imgModal));
   handleOverlay(imgModal);
-  handleEsc(imgModal);
 }
 initImgModal();
-function initEditModal() {
+function initEditModal(evt) {
   const editModal = document.querySelector(".popup_type_edit");
   const nameEl = document.querySelector(".profile__title");
   const descriptionEl = document.querySelector(".profile__description");
 
   const editButton = document.querySelector(".profile__edit-button");
-  editButton.addEventListener("click", () => openModal(editModal));
-
+  // editButton.addEventListener("click", () => openModal(editModal));
+  editButton.addEventListener("click", () => {
+    openModal(editModal);
+    nameInput.value = nameEl.textContent;
+    descriptionInput.value = descriptionEl.textContent;
+  });
   const closeEditModal = editModal.querySelector(".popup__close");
   closeEditModal.addEventListener("click", () => closeModal(editModal));
   handleOverlay(editModal);
-  handleEsc(editModal);
-  const form = editModal.querySelector("form");
-  form.addEventListener("submit", (event) => {
+
+  editProfileForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    const formData = Object.fromEntries(new FormData(form));
+    const formData = Object.fromEntries(new FormData(editProfileForm));
     const { name, description } = formData;
     nameEl.textContent = name;
     descriptionEl.textContent = description;
@@ -51,12 +53,11 @@ function initAddCardModal() {
   const closeAddModal = addCardModal.querySelector(".popup__close");
   closeAddModal.addEventListener("click", () => closeModal(addCardModal));
   handleOverlay(addCardModal);
-  handleEsc(addCardModal);
-  const form = addCardModal.querySelector("form");
-  form.addEventListener("submit", (event) => {
+  newPlaceForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    const formData = Object.fromEntries(new FormData(form));
+    const formData = Object.fromEntries(new FormData(newPlaceForm));
     addCard({ name: formData["place-name"], link: formData.link });
+    newPlaceForm.reset();
     closeModal(addCardModal);
   });
 }
@@ -89,6 +90,7 @@ function onOpen(information) {
   const image = imgModal.querySelector(".popup__image");
   caption.textContent = information.alt;
   image.src = information.link;
+  caption.textContent = information.name;
   openModal(imgModal);
 }
 
