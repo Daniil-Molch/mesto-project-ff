@@ -1,14 +1,23 @@
 // index.js
+
 import { openModal, closeModal, handleOverlay } from "./components/modal.js";
 import "./index.css"; // добавьте импорт главного файла стилей
 import { createCard, onLike, deleteCard } from "./components/card.js";
 import { initialCards } from "./components/cards.js";
+import { clearValidation, validation } from "./components/validation.js";
+import { fetchCards, fetchUser } from "./components/api.js";
 
 const imgModal = document.querySelector(".popup_type_image");
 const placesList = document.querySelector(".places__list");
 const newPlaceForm = document.querySelector("form[name=new-place]");
 const editProfileForm = document.querySelector("form[name=edit-profile]");
+/**
+ * @type {HTMLInputElement}
+ */
 const nameInput = editProfileForm.querySelector("input[name=name]");
+/**
+ * @type {HTMLInputElement}
+ */
 const descriptionInput = editProfileForm.querySelector(
   "input[name=description]"
 );
@@ -23,11 +32,16 @@ function initEditModal(evt) {
   const editModal = document.querySelector(".popup_type_edit");
   const nameEl = document.querySelector(".profile__title");
   const descriptionEl = document.querySelector(".profile__description");
+  // nameInput.addEventListener("invalid", (evt) => {
+  //   evt.preventDefault();
+  // });
+  validation([nameInput, descriptionInput], editProfileForm);
 
   const editButton = document.querySelector(".profile__edit-button");
   // editButton.addEventListener("click", () => openModal(editModal));
   editButton.addEventListener("click", () => {
     openModal(editModal);
+    clearValidation([nameInput, descriptionInput], editProfileForm);
     nameInput.value = nameEl.textContent;
     descriptionInput.value = descriptionEl.textContent;
   });
@@ -48,8 +62,13 @@ initEditModal();
 function initAddCardModal() {
   const addCardModal = document.querySelector(".popup_type_new-card");
   const addNewButton = document.querySelector(".profile__add-button");
-  addNewButton.addEventListener("click", () => openModal(addCardModal));
-
+  const placeNameInput = newPlaceForm.querySelector("input[name=place-name]");
+  const linkInput = newPlaceForm.querySelector("input[name=link]");
+  addNewButton.addEventListener("click", () => {
+    clearValidation([placeNameInput, linkInput], newPlaceForm);
+    return openModal(addCardModal);
+  });
+  validation([placeNameInput, linkInput], newPlaceForm);
   const closeAddModal = addCardModal.querySelector(".popup__close");
   closeAddModal.addEventListener("click", () => closeModal(addCardModal));
   handleOverlay(addCardModal);
@@ -72,7 +91,7 @@ function addCard(information) {
   placesList.prepend(newCard);
 }
 
-function initCard() {
+function initCard(initialCards) {
   initialCards.forEach((cardInformation) => {
     placesList.append(
       createCard(
@@ -93,5 +112,15 @@ function onOpen(information) {
   caption.textContent = information.name;
   openModal(imgModal);
 }
-
-initCard();
+async function main() {
+  const cardsPromise = fetchCards();
+  const userPromise = fetchUser();
+  const [cards, user] = await Promise.all([cardsPromise, userPromise]);
+  const parsedCards = cards.map((card) => {
+    const likes = card.likes;
+    const hasLiked = likes.some((like) => like._id === user._id);
+    return { ...card, hasLiked };
+  });
+  initCard(parsedCards);
+}
+main();
