@@ -1,4 +1,4 @@
-import { putLike,removeLike } from "./api";
+import { putLike, removeLike } from "./api";
 
 export function createCard(information, onDelete, onOpen, onLike) {
   const cardTemplate = document.querySelector("#card-template").content;
@@ -9,31 +9,44 @@ export function createCard(information, onDelete, onOpen, onLike) {
   const cardImage = cardElement.querySelector(".card__image");
   cardImage.alt = information.name;
   cardImage.src = information.link;
-  cardElement.querySelector(".card__title").textContent =
-    information.name;
+  cardElement.querySelector(".card__title").textContent = information.name;
   cardElement.querySelector(".card__likes-number").textContent =
     information.likes.length;
-  cardElement
-    .querySelector(".card__delete-button")
-    .addEventListener("click", onDelete);
+  const deleteButton = cardElement.querySelector(".card__delete-button");
   cardImage.addEventListener("click", onOpen);
   if (information.hasLiked) {
-    likeButton.classList.toggle("card__like-button_is-active");
-  } 
+    !likeButton.classList.toggle("card__like-button_is-active");
+  }
   likeButton.addEventListener("click", (evt) => {
     onLike(evt);
-    putLike(information._id).then((information) => {
-      cardElement.querySelector(".card__likes-number").textContent =
-        information.likes.length;
-    });
+  });
+  if (!information.canDelete) {
+    deleteButton.remove();
+  } else {
+    deleteButton.addEventListener("click", onDelete);
+  }
+  likeButton.addEventListener("click", (evt) => {
+    onLike(evt);
   });
   return cardElement;
 }
+function updateLikes(information, cardElement) {
+  cardElement.querySelector(".card__likes-number").textContent =
+    information.likes.length;
+  const likeButton = cardElement.querySelector(".card__like-button");
+  likeButton.classList.add("card__like-button_is-active");
+}
 
-export const deleteCard = function (event) {
-  event.target.closest(".card").remove();
-};
-
-export function onLike(evt) {
-  evt.currentTarget.classList.toggle("card__like-button_is-active");
+export function onLike(information, cardElement) {
+  const likeButton = cardElement.querySelector(".card__like-button");
+  if (!likeButton.classList.contains("card__like-button_is-active")) {
+    putLike(information._id).then((information) =>
+      updateLikes(information, cardElement)
+    );
+  } else {
+    removeLike(information._id)
+      .then((result) => updateLikes(result, cardElement))
+      .catch((err) => console.log(err));
+      likeButton.classList.remove("card__like-button_is-active");
+  }
 }

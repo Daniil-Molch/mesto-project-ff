@@ -2,15 +2,32 @@
 
 import { openModal, closeModal, handleOverlay } from "./components/modal.js";
 import "./index.css"; // добавьте импорт главного файла стилей
-import { createCard, onLike, deleteCard } from "./components/card.js";
-import { initialCards } from "./components/cards.js";
+import { createCard, onLike } from "./components/card.js";
 import { clearValidation, validation } from "./components/validation.js";
-import { fetchCards, fetchUser } from "./components/api.js";
+import {
+  fetchCards,
+  fetchUser,
+  removeLike,
+  updateUserData,
+  updateAvatar,
+  deleteCard,
+  createCard as createCardAPI,
+} from "./components/api.js";
 
 const imgModal = document.querySelector(".popup_type_image");
 const placesList = document.querySelector(".places__list");
 const newPlaceForm = document.querySelector("form[name=new-place]");
 const editProfileForm = document.querySelector("form[name=edit-profile]");
+const editPopup = document.querySelector(".popup_type_edit");
+const profileTitle = document.querySelector(".profile__title");
+const profileDescription = document.querySelector(".profile__description");
+const profileImage = document.querySelector(".profile__image");
+const editAvatarPopup = document.querySelector(".popup_type_edit-avatar");
+const editAvatarFormElement = document.querySelector("form[name=edit-avatar]");
+const deleteCardFormElement = document.querySelector("form[name=delete-card]");
+const avatarLinkInput = editAvatarFormElement.querySelector(
+  ".popup__input_type_url"
+);
 /**
  * @type {HTMLInputElement}
  */
@@ -30,8 +47,6 @@ function initImgModal() {
 initImgModal();
 function initEditModal(evt) {
   const editModal = document.querySelector(".popup_type_edit");
-  const nameEl = document.querySelector(".profile__title");
-  const descriptionEl = document.querySelector(".profile__description");
   // nameInput.addEventListener("invalid", (evt) => {
   //   evt.preventDefault();
   // });
@@ -42,8 +57,8 @@ function initEditModal(evt) {
   editButton.addEventListener("click", () => {
     openModal(editModal);
     clearValidation([nameInput, descriptionInput], editProfileForm);
-    nameInput.value = nameEl.textContent;
-    descriptionInput.value = descriptionEl.textContent;
+    nameInput.value = profileTitle.textContent;
+    descriptionInput.value = profileDescription.textContent;
   });
   const closeEditModal = editModal.querySelector(".popup__close");
   closeEditModal.addEventListener("click", () => closeModal(editModal));
@@ -53,8 +68,8 @@ function initEditModal(evt) {
     event.preventDefault();
     const formData = Object.fromEntries(new FormData(editProfileForm));
     const { name, description } = formData;
-    nameEl.textContent = name;
-    descriptionEl.textContent = description;
+    profileTitle.textContent = name;
+    profileDescription.textContent = description;
     closeModal(editModal);
   });
 }
@@ -75,32 +90,60 @@ function initAddCardModal() {
   newPlaceForm.addEventListener("submit", (event) => {
     event.preventDefault();
     const formData = Object.fromEntries(new FormData(newPlaceForm));
-    addCard({ name: formData["place-name"], link: formData.link });
-    newPlaceForm.reset();
-    closeModal(addCardModal);
+    createCardAPI(formData["place-name"], formData.link).then((information) => {
+      addCard(information);
+      newPlaceForm.reset();
+      closeModal(addCardModal);
+    });
+  });
+}
+function initAvatarModal() {
+  profileImage.addEventListener("click", () => {
+    clearValidation([avatarLinkInput], editAvatarFormElement);
+    return openModal(editAvatarPopup);
+  });
+  validation([avatarLinkInput], editAvatarFormElement);
+  const closeAddModal = editAvatarPopup.querySelector(".popup__close");
+  const button = editPopup.querySelector(".popup__button");
+  closeAddModal.addEventListener("click", () => closeModal(editAvatarPopup));
+  handleOverlay(editAvatarPopup);
+  editAvatarFormElement.addEventListener("submit", (event) => {
+    event.preventDefault();
+    renderLoading(true, button);
+    updateAvatar(avatarLinkInput.value)
+      .then((result) => {
+        profileImage.style.backgroundImage = `url(\'${result.avatar}\')`;
+        closeModal(editAvatarPopup);
+      })
+      .catch((err) => console.log(err))
+      .finally(() => renderLoading(false, button));
+    editAvatarFormElement.reset();
   });
 }
 initAddCardModal();
+initAvatarModal();
 function addCard(information) {
   const newCard = createCard(
     information,
     deleteCard,
     () => onOpen(information),
-    onLike
+    () => onLike(information, newCard)
   );
   placesList.prepend(newCard);
 }
 
 function initCard(initialCards) {
   initialCards.forEach((cardInformation) => {
-    placesList.append(
-      createCard(
-        cardInformation,
-        deleteCard,
-        () => onOpen(cardInformation),
-        onLike
-      )
+    const newCard = createCard(
+      cardInformation,
+      () => {
+        newCard.remove();
+        deleteCard(cardInformation._id);
+      },
+      () => onOpen(cardInformation),
+      () => onLike(cardInformation, newCard)
     );
+    placesList.append(newCard);
   });
 }
 
@@ -119,8 +162,38 @@ async function main() {
   const parsedCards = cards.map((card) => {
     const likes = card.likes;
     const hasLiked = likes.some((like) => like._id === user._id);
-    return { ...card, hasLiked };
+    const canDelete = card.owner._id === user._id;
+    return { ...card, hasLiked, canDelete };
   });
+  profileTitle.textContent = user.name;
+  profileDescription.textContent = user.about;
+  profileImage.style.backgroundImage = `url(\'${user.avatar}\')`;
+  console.log(user.avatar);
   initCard(parsedCards);
 }
 main();
+
+function renderLoading(isLoading, button) {
+  if (isLoading) {
+    button.textContent = "Сохранение...";
+  } else {
+    button.textContent = "Сохранить";
+  }
+}
+
+function handleEditFormSubmit(evt) {
+  evt.preventDefault();
+  const button = editPopup.querySelector(".popup__button");
+  renderLoading(true, button);
+  updateUserData(nameInput.value, descriptionInput.value)
+    .then((result) => {
+      profileTitle.textContent = result.name;
+      profileDescription.textContent = result.about;
+      renderLoading(false, button);
+      closeModal(editPopup);
+    })
+    .catch((err) => console.log(err));
+}
+
+editProfileForm.addEventListener("submit", handleEditFormSubmit);
+// deleteCardFormElement.addEventListener('submit',initCard);

@@ -27,17 +27,63 @@ export async function putLike(cardId) {
   const data = await response.json();
   return data;
 }
+const cardsRequest = `${config.baseUrl}/cards`;
 export const removeLike = async (cardId) => {
   const cardLikeRequest = `${cardsRequest}/likes`;
   const res = await fetch(`${cardLikeRequest}/${cardId}`, {
     method: "DELETE",
     headers: config.headers,
   });
-  return getResult(res);
+  const data = await res.json();
+  return data;
 };
-//  async function test(){
-//   const promise=Promise.resolve("Data")
-//    promise.then((argument)=>{})
-//    promise.catch(()=>{})
-//     const argument=await promise;
-// }
+
+const handleResponse = (response) => {
+  if (response.ok) {
+    return response.json();
+  }
+  return Promise.reject(`Ошибка: ${response.status}`);
+};
+const userRequest = `${config.baseUrl}/users/me`;
+export const updateUserData = async (name, about) => {
+  const response = await fetch(userRequest, {
+    method: "PATCH",
+    headers: config.headers,
+    body: JSON.stringify({
+      name: name,
+      about: about,
+    }),
+  });
+  return handleResponse(response);
+};
+
+export const updateAvatar = async (avatarLink) => {
+  const response = await fetch(`${userRequest}/avatar`, {
+    method: "PATCH",
+    headers: config.headers,
+    body: JSON.stringify({
+      avatar: avatarLink,
+    }),
+  });
+  return handleResponse(response);
+};
+
+export const createCard = async (name, link) => {
+  const response = await fetch(cardsRequest, {
+    method: "POST",
+    headers: config.headers,
+    body: JSON.stringify({
+      name: name,
+      link: link,
+    }),
+  });
+  return handleResponse(response);
+};
+
+export const deleteCard = async (cardId) => {
+  const response = await fetch(`${cardsRequest}/${cardId}`, {
+    method: "DELETE",
+    headers: config.headers,
+  });
+  return handleResponse(response);
+};
