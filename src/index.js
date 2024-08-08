@@ -16,6 +16,8 @@ import {
 
 const imgModal = document.querySelector(".popup_type_image");
 const placesList = document.querySelector(".places__list");
+const caption = imgModal.querySelector(".popup__caption");
+const image = imgModal.querySelector(".popup__image");
 const newPlaceForm = document.querySelector("form[name=new-place]");
 const editProfileForm = document.querySelector("form[name=edit-profile]");
 const editPopup = document.querySelector(".popup_type_edit");
@@ -25,6 +27,7 @@ const profileImage = document.querySelector(".profile__image");
 const editAvatarPopup = document.querySelector(".popup_type_edit-avatar");
 const editAvatarFormElement = document.querySelector("form[name=edit-avatar]");
 const deleteCardFormElement = document.querySelector("form[name=delete-card]");
+const newCardPopup = document.querySelector(".popup_type_new-card");
 const avatarLinkInput = editAvatarFormElement.querySelector(
   ".popup__input_type_url"
 );
@@ -45,6 +48,14 @@ function initImgModal() {
   handleOverlay(imgModal);
 }
 initImgModal();
+function renderLoading(isLoading, button) {
+  if (isLoading) {
+    button.textContent = "Сохранение...";
+  } else {
+    button.textContent = "Сохранить";
+  }
+}
+
 function initEditModal(evt) {
   const editModal = document.querySelector(".popup_type_edit");
   // nameInput.addEventListener("invalid", (evt) => {
@@ -63,38 +74,41 @@ function initEditModal(evt) {
   const closeEditModal = editModal.querySelector(".popup__close");
   closeEditModal.addEventListener("click", () => closeModal(editModal));
   handleOverlay(editModal);
-
-  editProfileForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const formData = Object.fromEntries(new FormData(editProfileForm));
-    const { name, description } = formData;
-    profileTitle.textContent = name;
-    profileDescription.textContent = description;
-    closeModal(editModal);
-  });
+  // editProfileForm.addEventListener("submit", (event) => {
+  //   event.preventDefault();
+  //   const formData = Object.fromEntries(new FormData(editProfileForm));
+  //   const { name, description } = formData;
+  //   profileTitle.textContent = name;
+  //   profileDescription.textContent = description;
+  //   closeModal(editModal);
+  // });
 }
 initEditModal();
 function initAddCardModal() {
-  const addCardModal = document.querySelector(".popup_type_new-card");
   const addNewButton = document.querySelector(".profile__add-button");
   const placeNameInput = newPlaceForm.querySelector("input[name=place-name]");
   const linkInput = newPlaceForm.querySelector("input[name=link]");
+  const button = newCardPopup.querySelector(".popup__button");
   addNewButton.addEventListener("click", () => {
     clearValidation([placeNameInput, linkInput], newPlaceForm);
-    return openModal(addCardModal);
+    return openModal(newCardPopup);
   });
   validation([placeNameInput, linkInput], newPlaceForm);
-  const closeAddModal = addCardModal.querySelector(".popup__close");
-  closeAddModal.addEventListener("click", () => closeModal(addCardModal));
-  handleOverlay(addCardModal);
+  const closeAddModal = newCardPopup.querySelector(".popup__close");
+  closeAddModal.addEventListener("click", () => closeModal(newCardPopup));
+  handleOverlay(newCardPopup);
   newPlaceForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    const formData = Object.fromEntries(new FormData(newPlaceForm));
-    createCardAPI(formData["place-name"], formData.link).then((information) => {
-      addCard(information);
-      newPlaceForm.reset();
-      closeModal(addCardModal);
-    });
+    renderLoading(true, button);
+    createCardAPI(placeNameInput.value, linkInput.value)
+      .then((information) => {
+        information.canDelete=true;
+        addCard(information);
+        newPlaceForm.reset();
+        closeModal(newCardPopup);
+      })
+      .catch((error) => console.error(error)) //
+      .finally(() => renderLoading(false, button));
   });
 }
 function initAvatarModal() {
@@ -104,7 +118,7 @@ function initAvatarModal() {
   });
   validation([avatarLinkInput], editAvatarFormElement);
   const closeAddModal = editAvatarPopup.querySelector(".popup__close");
-  const button = editPopup.querySelector(".popup__button");
+  const button = editAvatarPopup.querySelector(".popup__button");
   closeAddModal.addEventListener("click", () => closeModal(editAvatarPopup));
   handleOverlay(editAvatarPopup);
   editAvatarFormElement.addEventListener("submit", (event) => {
@@ -112,12 +126,12 @@ function initAvatarModal() {
     renderLoading(true, button);
     updateAvatar(avatarLinkInput.value)
       .then((result) => {
+        editAvatarFormElement.reset();
         profileImage.style.backgroundImage = `url(\'${result.avatar}\')`;
         closeModal(editAvatarPopup);
       })
       .catch((err) => console.log(err))
       .finally(() => renderLoading(false, button));
-    editAvatarFormElement.reset();
   });
 }
 initAddCardModal();
@@ -126,7 +140,7 @@ function addCard(information) {
   const newCard = createCard(
     information,
     deleteCard,
-    () => onOpen(information),
+    () => openFull(information),
     () => onLike(information, newCard)
   );
   placesList.prepend(newCard);
@@ -140,22 +154,20 @@ function initCard(initialCards) {
         newCard.remove();
         deleteCard(cardInformation._id);
       },
-      () => onOpen(cardInformation),
+      () => openFull(cardInformation),
       () => onLike(cardInformation, newCard)
     );
     placesList.append(newCard);
   });
 }
 
-function onOpen(information) {
-  const caption = imgModal.querySelector(".popup__caption");
-  const image = imgModal.querySelector(".popup__image");
+function openFull(information) {
   caption.textContent = information.alt;
   image.src = information.link;
   caption.textContent = information.name;
   openModal(imgModal);
 }
-async function main() {
+async function getMainInfo() {
   const cardsPromise = fetchCards();
   const userPromise = fetchUser();
   const [cards, user] = await Promise.all([cardsPromise, userPromise]);
@@ -171,15 +183,7 @@ async function main() {
   console.log(user.avatar);
   initCard(parsedCards);
 }
-main();
-
-function renderLoading(isLoading, button) {
-  if (isLoading) {
-    button.textContent = "Сохранение...";
-  } else {
-    button.textContent = "Сохранить";
-  }
-}
+getMainInfo();
 
 function handleEditFormSubmit(evt) {
   evt.preventDefault();
@@ -196,4 +200,3 @@ function handleEditFormSubmit(evt) {
 }
 
 editProfileForm.addEventListener("submit", handleEditFormSubmit);
-// deleteCardFormElement.addEventListener('submit',initCard);

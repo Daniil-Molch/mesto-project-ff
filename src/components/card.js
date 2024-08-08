@@ -33,20 +33,23 @@ export function createCard(information, onDelete, onOpen, onLike) {
 function updateLikes(information, cardElement) {
   cardElement.querySelector(".card__likes-number").textContent =
     information.likes.length;
-  const likeButton = cardElement.querySelector(".card__like-button");
-  likeButton.classList.add("card__like-button_is-active");
 }
 
 export function onLike(information, cardElement) {
   const likeButton = cardElement.querySelector(".card__like-button");
   if (!likeButton.classList.contains("card__like-button_is-active")) {
-    putLike(information._id).then((information) =>
-      updateLikes(information, cardElement)
-    );
+    putLike(information._id)
+      .then((information) => {
+        likeButton.classList.add("card__like-button_is-active");
+        return updateLikes(information, cardElement);
+      })
+      .catch((err) => console.log(err));
   } else {
     removeLike(information._id)
-      .then((result) => updateLikes(result, cardElement))
+      .then((result) => {
+        likeButton.classList.remove("card__like-button_is-active");
+        return updateLikes(result, cardElement);
+      })
       .catch((err) => console.log(err));
-      likeButton.classList.remove("card__like-button_is-active");
   }
 }
