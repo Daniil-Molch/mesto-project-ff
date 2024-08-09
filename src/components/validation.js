@@ -38,7 +38,7 @@ export function clearValidation(inputs, form) {
    */
   const submitButton = form.querySelector("button[type=submit]");
   submitButton.disabled = true;
-  form.reset();
+  // form.reset();
   inputs.forEach((inputEl) => {
     const selector = `.${inputEl.name}-input-error`;
     const inputError = document.querySelector(selector);

@@ -48,6 +48,7 @@ function initImgModal() {
   handleOverlay(imgModal);
 }
 initImgModal();
+
 function renderLoading(isLoading, button) {
   if (isLoading) {
     button.textContent = "Сохранение...";
@@ -58,13 +59,9 @@ function renderLoading(isLoading, button) {
 
 function initEditModal(evt) {
   const editModal = document.querySelector(".popup_type_edit");
-  // nameInput.addEventListener("invalid", (evt) => {
-  //   evt.preventDefault();
-  // });
   validation([nameInput, descriptionInput], editProfileForm);
-
   const editButton = document.querySelector(".profile__edit-button");
-  // editButton.addEventListener("click", () => openModal(editModal));
+
   editButton.addEventListener("click", () => {
     openModal(editModal);
     clearValidation([nameInput, descriptionInput], editProfileForm);
@@ -74,16 +71,9 @@ function initEditModal(evt) {
   const closeEditModal = editModal.querySelector(".popup__close");
   closeEditModal.addEventListener("click", () => closeModal(editModal));
   handleOverlay(editModal);
-  // editProfileForm.addEventListener("submit", (event) => {
-  //   event.preventDefault();
-  //   const formData = Object.fromEntries(new FormData(editProfileForm));
-  //   const { name, description } = formData;
-  //   profileTitle.textContent = name;
-  //   profileDescription.textContent = description;
-  //   closeModal(editModal);
-  // });
 }
 initEditModal();
+
 function initAddCardModal() {
   const addNewButton = document.querySelector(".profile__add-button");
   const placeNameInput = newPlaceForm.querySelector("input[name=place-name]");
@@ -102,7 +92,7 @@ function initAddCardModal() {
     renderLoading(true, button);
     createCardAPI(placeNameInput.value, linkInput.value)
       .then((information) => {
-        information.canDelete=true;
+        information.canDelete = true;
         addCard(information);
         newPlaceForm.reset();
         closeModal(newCardPopup);
@@ -111,6 +101,7 @@ function initAddCardModal() {
       .finally(() => renderLoading(false, button));
   });
 }
+
 function initAvatarModal() {
   profileImage.addEventListener("click", () => {
     clearValidation([avatarLinkInput], editAvatarFormElement);
@@ -136,6 +127,7 @@ function initAvatarModal() {
 }
 initAddCardModal();
 initAvatarModal();
+
 function addCard(information) {
   const newCard = createCard(
     information,
@@ -146,7 +138,7 @@ function addCard(information) {
   placesList.prepend(newCard);
 }
 
-function initCard(initialCards) {
+function initCards(initialCards) {
   initialCards.forEach((cardInformation) => {
     const newCard = createCard(
       cardInformation,
@@ -167,6 +159,7 @@ function openFull(information) {
   caption.textContent = information.name;
   openModal(imgModal);
 }
+
 async function getMainInfo() {
   const cardsPromise = fetchCards();
   const userPromise = fetchUser();
@@ -181,7 +174,11 @@ async function getMainInfo() {
   profileDescription.textContent = user.about;
   profileImage.style.backgroundImage = `url(\'${user.avatar}\')`;
   console.log(user.avatar);
-  initCard(parsedCards);
+  try {
+    initCards(parsedCards);
+  } catch {
+    (err) => console.log(err);
+  }
 }
 getMainInfo();
 
@@ -193,10 +190,10 @@ function handleEditFormSubmit(evt) {
     .then((result) => {
       profileTitle.textContent = result.name;
       profileDescription.textContent = result.about;
-      renderLoading(false, button);
       closeModal(editPopup);
     })
-    .catch((err) => console.log(err));
+    .catch((err) => console.log(err))
+    .finally(() => renderLoading(false, button));
 }
 
 editProfileForm.addEventListener("submit", handleEditFormSubmit);

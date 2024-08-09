@@ -9,23 +9,26 @@ const config = {
 export async function fetchCards() {
   const url = `${config.baseUrl}/cards`;
   const response = await fetch(url, { headers: config.headers });
-  const data = await response.json();
-  console.log(data);
-  return data;
+  // const data = await response.json();
+  // console.log(data);
+  // return data.
+  return handleResponse(response);
 }
 
 export async function fetchUser() {
   const url = `${config.baseUrl}/users/me`;
   const response = await fetch(url, { headers: config.headers });
-  const data = await response.json();
-  console.log(data);
-  return data;
+  // const data = await response.json();
+  // console.log(data);
+  // return data;
+  return handleResponse(response);
 }
 export async function putLike(cardId) {
   const url = `${config.baseUrl}/cards/likes/${cardId}`;
   const response = await fetch(url, { headers: config.headers, method: "PUT" });
-  const data = await response.json();
-  return data;
+  // const data = await response.json();
+  // return data;
+  return handleResponse(response);
 }
 const cardsRequest = `${config.baseUrl}/cards`;
 export const removeLike = async (cardId) => {
@@ -34,8 +37,9 @@ export const removeLike = async (cardId) => {
     method: "DELETE",
     headers: config.headers,
   });
-  const data = await res.json();
-  return data;
+  // const data = await res.json();
+  // return data;
+  return handleResponse(response);
 };
 
 const handleResponse = (response) => {
